@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مبدل متن فارسی به PDF</title>
+    <style>
+        @font-face {
+            font-family: 'Vazir';
+            src: url('Vazir.ttf') format('truetype');
+            font-weight: normal;
+        }
+        
+        @font-face {
+            font-family: 'KalamehBlack';
+            src: url('Kalameh-Black.ttf') format('truetype');
+            font-weight: bold;
+        }
+
+        /* فونت آنلاین فقط برای موبایل */
+        @media (max-width: 768px) {
+            @font-face {
+                font-family: 'Vazir';
+                src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir.ttf') format('truetype');
+                font-weight: normal;
+            }
+            @font-face {
+                font-family: 'KalamehBlack';
+                src: url('https://cdn.fontcdn.ir/Font/Persian/Kalameh/Kalameh-Black.ttf') format('truetype');
+                font-weight: bold;
+            }
+        }
+        
+        :root {
+            --primary-color: #3F51B5;
+            --primary-hover: #303F9F;
+            --secondary-color: #FF4081;
+            --accent-color: #FFC107;
+            --light-gray: #f5f5f5;
+            --gray: #e0e0e0;
+            --dark-gray: #757575;
+            --text-color: #212121;
+            --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+            --border-radius: 8px;
+        }
+        
+        body {
+            font-family: 'Vazir', Tahoma, Arial;
+            direction: rtl;
+            text-align: right;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light-gray);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 600px;
+            min-width: 0;
+            margin: 32px auto 32px auto;
+            background-color: white;
+            padding: 18px 12px 24px 12px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        
+        .app-header {
+            text-align: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--gray);
+        }
+        
+        .app-title {
+            font-family: 'KalamehBlack', 'Vazir', Tahoma;
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 30px;
+            font-weight: bold;
+            word-break: break-word;
+        }
+        
+        .app-description {
+            color: var(--dark-gray);
+            margin-top: 10px;
+            font-size: 15px;
+        }
+        
+        .section {
+            margin-bottom: 20px;
+            padding: 14px 8px 14px 8px;
+            background-color: var(--light-gray);
+            border-radius: var(--border-radius);
+            position: relative;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        
+        .section-title {
+            font-family: 'KalamehBlack', 'Vazir', Tahoma;
+            color: var(--primary-color);
+            margin-top: 0;
+            border-bottom: 2px solid var(--gray);
+            padding-bottom: 8px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            font-size: 18px;
+        }
+        
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background-color: var(--secondary-color);
+            margin-left: 10px;
+            display: inline-block;
+        }
+        
+        .option-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        
+        .option-group > div {
+            flex: 1;
+            min-width: 160px;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--dark-gray);
+            font-weight: bold;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 220px;
+            padding: 10px;
+            font-family: 'Vazir', Tahoma;
+            direction: rtl;
+            text-align: right;
+            margin-bottom: 14px;
+            border: 1px solid var(--gray);
+            border-radius: var(--border-radius);
+            resize: vertical;
+            transition: var(--transition);
+            font-size: 15px;
+            line-height: 1.6;
+            box-sizing: border-box;
+        }
+        
+        textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(63, 81, 181, 0.2);
+            outline: none;
+        }
+        
+        select, input {
+            font-family: 'Vazir', Tahoma;
+            padding: 10px;
+            width: 100%;
+            margin-bottom: 5px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--gray);
+            transition: var(--transition);
+            background-color: white;
+            box-sizing: border-box;
+        }
+        
+        select:focus, input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(63, 81, 181, 0.2);
+            outline: none;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin: 14px 0;
+            justify-content: center;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            font-family: 'Vazir', Tahoma;
+            cursor: pointer;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+            min-width: 120px;
+            box-shadow: var(--box-shadow);
+            box-sizing: border-box;
+        }
+        
+        button:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+        
+        button.secondary {
+            background-color: white;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+        
+        button.secondary:hover {
+            background-color: rgba(63, 81, 181, 0.1);
+        }
+        
+        button.accent {
+            background-color: var(--secondary-color);
+        }
+        
+        button.accent:hover {
+            background-color: #E91E63;
+        }
+        
+        .preview-container {
+            margin-top: 18px;
+        }
+        
+        .preview {
+            border: 1px solid var(--gray);
+            padding: 18px 8px;
+            margin-top: 12px;
+            min-height: 120px;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            position: relative;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .title-preview {
+            font-family: 'KalamehBlack', 'Vazir', Tahoma;
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: var(--text-color);
+        }
+        
+        .body-preview {
+            font-family: 'Vazir', Tahoma;
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-color);
+        }
+        
+        .editable-content {
+            outline: none;
+            border: 1px dashed transparent;
+            padding: 8px;
+            transition: var(--transition);
+            border-radius: 4px;
+        }
+        
+        .editable-content:hover {
+            border: 1px dashed var(--gray);
+            background-color: rgba(0, 0, 0, 0.01);
+        }
+        
+        .editable-content:focus {
+            border: 1px dashed var(--primary-color);
+            background-color: rgba(63, 81, 181, 0.05);
+        }
+        
+        /* استایل‌های نمایش صفحه */
+        .page-break {
+            page-break-after: always;
+            width: 100%;
+            height: 2px;
+            background-color: var(--secondary-color);
+            margin: 30px 0;
+            position: relative;
+            border-radius: 2px;
+        }
+        
+        .page-break::after {
+            content: "پایان صفحه";
+            position: absolute;
+            right: 0;
+            top: -12px;
+            font-size: 12px;
+            color: white;
+            background-color: var(--secondary-color);
+            padding: 2px 10px;
+            border-radius: 15px;
+        }
+        
+        /* استایل برای پیش‌نمایش صفحات */
+        .preview-page {
+            margin-bottom: 20px;
+            border: 1px dashed var(--gray);
+            padding: 30px;
+            background-color: white;
+            position: relative;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+        
+        .preview-page::before {
+            content: attr(data-page);
+            position: absolute;
+            top: -10px;
+            right: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 4px 12px;
+            font-size: 12px;
+            border-radius: 15px;
+            box-shadow: var(--box-shadow);
+        }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        
+        .tooltip .tooltip-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            background-color: var(--dark-gray);
+            color: white;
+            border-radius: 50%;
+            font-size: 12px;
+            cursor: help;
+        }
+        
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--dark-gray);
+            color: white;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+        }
+        
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                max-width: 98vw;
+                margin: 8px;
+                padding: 6px 2vw;
+            }
+            
+            .option-group {
+                flex-direction: column;
+            }
+            
+            .option-group > div {
+                width: 100%;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+            
+            .section {
+                padding: 8px 2vw;
+            }
+            
+            .preview {
+                padding: 10px 2vw;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="app-header">
+            <h1 class="app-title">مبدل متن فارسی به PDF</h1>
+            <p class="app-description">با این ابزار می‌توانید متن فارسی خود را به راحتی به فایل PDF با قالب‌بندی مناسب تبدیل کنید</p>
+        </div>
+        
+        <div class="section">
+            <h3 class="section-title">تنظیمات فونت و صفحه</h3>
+            
+            <div class="option-group">
+                <div>
+                    <button id="showPageBreaksBtn" class="secondary" style="margin-right:auto; margin-left:0;">نمایش شکست صفحه</button>
+                </div>
+                <div>
+                    <label for="pageHeight">ارتفاع هر صفحه (پیکسل)
+                        <span class="tooltip">
+                            <span class="tooltip-icon">؟</span>
+                            <span class="tooltip-text">تعیین ارتفاع هر صفحه در خروجی PDF</span>
+                        </span>
+                    </label>
+                    <input type="number" id="pageHeight" value="800" min="500" max="1500">
+                </div>
+            </div>
+            
+            <div class="option-group">
+                <div>
+                    <label for="titleFont">فونت عنوان
+                        <span class="tooltip">
+                            <span class="tooltip-icon">؟</span>
+                            <span class="tooltip-text">فونت مورد استفاده برای عناوین اصلی (خطوط شروع شده با #)</span>
+                        </span>
+                    </label>
+                    <select id="titleFont">
+                        <option value="KalamehBlack">کلمه بلک</option>
+                        <option value="Vazir">وزیر</option>
+                        <option value="CustomFont" style="display:none;">فونت سفارشی</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="titleSize">اندازه عنوان </label>
+                    <input type="number" id="titleSize" value="24" min="16" max="42">
+                </div>
+                <div>
+                    <label for="titleMargin">فاصله عنوان تا متن</label>
+                    <input type="number" id="titleMargin" value="15" min="0" max="100">
+                </div>
+            </div>
+            <div class="option-group">
+                <div>
+                    <label for="bodyFont">فونت متن اصلی
+                        <span class="tooltip">
+                            <span class="tooltip-icon">؟</span>
+                            <span class="tooltip-text">فونت مورد استفاده برای متن اصلی</span>
+                        </span>
+                    </label>
+                    <select id="bodyFont">
+                        <option value="Vazir">وزیر</option>
+                        <option value="KalamehBlack">کلمه بلک</option>
+                        <option value="CustomFont" style="display:none;">فونت سفارشی</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="bodySize">اندازه متن </label>
+                    <input type="number" id="bodySize" value="16" min="12" max="24">
+                </div>
+                <div>
+                    <label for="lineHeight">فاصله بین خطوط</label>
+                    <input type="number" id="lineHeight" value="1.6" min="1" max="3" step="0.1">
+                </div>
+            </div>
+            <!-- ورودی آپلود فونت TTF -->
+            <div class="option-group">
+                <div>
+                    <label for="customFontInput">افزودن فونت TTF سفارشی</label>
+                    <input type="file" id="customFontInput" accept=".ttf">
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h3 class="section-title">متن خود را وارد کنید</h3>
+            <textarea id="inputText" placeholder="متن خود را اینجا وارد کنید.
+
+        نکات:
+        - خطوط شروع شده با # به عنوان تیتر در نظر گرفته می‌شوند
+        - علامت‌های # و * به طور خودکار حذف می‌شوند
+        - می‌توانید پس از ایجاد پیش‌نمایش، متن را ویرایش کنید
+        - برای تقسیم صفحات، از دکمه 'نمایش شکست صفحه' استفاده کنید"></textarea>
+                    
+            <div class="button-group">
+                <button id="previewBtn">پیش‌نمایش</button>
+                <button id="generatePdfBtn" class="accent">تبدیل به PDF</button>
+            </div>
+        </div>
+        
+        <div class="preview-container">
+            <div class="preview-header">
+                <h3 class="section-title">پیش‌نمایش</h3>
+                <!-- دکمه کپی کل متن پیش‌نمایش -->
+                <button id="copyPreviewBtn" class="secondary" style="font-size:13px; padding:6px 18px;">کپی همه</button>
+            </div>
+            <div class="preview" id="preview"></div>
+        </div>
+    </div>
+
+    <!-- افزودن کتابخانه‌های مورد نیاز -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <script>
+        // اگر عرض صفحه کمتر از 768 بود، لینک فونت‌های آنلاین را اضافه کن (برای اطمینان بیشتر)
+        if (window.innerWidth <= 768) {
+            var vazirLink = document.createElement('link');
+            vazirLink.rel = 'stylesheet';
+            vazirLink.href = 'https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css';
+            document.head.appendChild(vazirLink);
+
+            var kalamehLink = document.createElement('link');
+            kalamehLink.rel = 'stylesheet';
+            kalamehLink.href = 'https://cdn.fontcdn.ir/Font/Persian/Kalameh/Kalameh.css';
+            document.head.appendChild(kalamehLink);
+        }
+
+        // تعریف کردن jsPDF در دسترس
+        const { jsPDF } = window.jspdf;
+        
+        // تعریف فونت‌های پیش‌فرض
+        const fontMap = {
+            'KalamehBlack': 'KalamehBlack',
+            'Vazir': 'Vazir'
+            // 'CustomFont' به صورت داینامیک اضافه می‌شود
+        };
+        
+        // نمایش پیش‌نمایش
+        document.getElementById('previewBtn').addEventListener('click', function() {
+            const inputText = document.getElementById('inputText').value;
+            const preview = document.getElementById('preview');
+            preview.innerHTML = '';
+
+            // مقدار line-height را از ورودی بگیر
+            const lineHeight = document.getElementById('lineHeight').value || 1.6;
+            const titleMargin = document.getElementById('titleMargin') ? document.getElementById('titleMargin').value : 15;
+
+            // تبدیل متن به پاراگراف‌ها و عنوان‌ها
+            const lines = inputText.split('\n');
+
+            lines.forEach(line => {
+                // حذف علامت‌های * و # از ابتدا و انتهای متن
+                let cleanLine = line.trim();
+                // حذف علامت # در ابتدای خط
+                let isTitle = false;
+                if (cleanLine.startsWith('#')) {
+                    isTitle = true;
+                    cleanLine = cleanLine.replace(/^#+\s*/, '');
+                }
+                
+                // حذف علامت‌های * از کل متن
+                cleanLine = cleanLine.replace(/\*/g, '');
+                
+                if (cleanLine) {
+                    if (isTitle) {
+                        // این یک عنوان است
+                        const titleFont = document.getElementById('titleFont').value;
+                        const titleSize = document.getElementById('titleSize').value;
+                        
+                        const titleElement = document.createElement('div');
+                        titleElement.className = 'title-preview editable-content';
+                        titleElement.textContent = cleanLine;
+                        titleElement.style.fontFamily = `${fontMap[titleFont]}, Tahoma`;
+                        titleElement.style.fontSize = `${titleSize}px`;
+                        titleElement.contentEditable = "true";
+                        // اعمال فاصله خطوط
+                        titleElement.style.lineHeight = lineHeight;
+                        // اعمال فاصله عنوان تا متن
+                        titleElement.style.marginBottom = `${titleMargin}px`;
+                        
+                        preview.appendChild(titleElement);
+                    } else {
+                        // این یک پاراگراف متن است
+                        const bodyFont = document.getElementById('bodyFont').value;
+                        const bodySize = document.getElementById('bodySize').value;
+                        
+                        const bodyElement = document.createElement('div');
+                        bodyElement.className = 'body-preview editable-content';
+                        bodyElement.textContent = cleanLine;
+                        bodyElement.style.fontFamily = `${fontMap[bodyFont]}, Tahoma`;
+                        bodyElement.style.fontSize = `${bodySize}px`;
+                        bodyElement.style.marginBottom = '10px';
+                        bodyElement.contentEditable = "true";
+                        // اعمال فاصله خطوط
+                        bodyElement.style.lineHeight = lineHeight;
+                        
+                        preview.appendChild(bodyElement);
+                    }
+                } else {
+                    // خط خالی
+                    preview.appendChild(document.createElement('br'));
+                }
+            });
+        });
+        
+        // نمایش شکست صفحه در پیش‌نمایش
+        document.getElementById('showPageBreaksBtn').addEventListener('click', function() {
+            const pageHeight = parseInt(document.getElementById('pageHeight').value) || 800;
+            const preview = document.getElementById('preview');
+            
+            // ابتدا پیش‌نمایش را به‌روز می‌کنیم اگر خالی است
+            if (preview.children.length === 0) {
+                document.getElementById('previewBtn').click();
+            }
+            
+            // حذف نشانگرهای قبلی شکست صفحه
+            const existingPageBreaks = document.querySelectorAll('.page-break');
+            existingPageBreaks.forEach(pb => pb.remove());
+            
+            // بررسی ارتفاع کلی و افزودن نشانگرهای شکست صفحه
+            let currentHeight = 0;
+            const elements = Array.from(preview.children);
+            
+            for (let i = 0; i < elements.length; i++) {
+                const element = elements[i];
+                const elementHeight = element.offsetHeight;
+                
+                currentHeight += elementHeight;
+                
+                // اگر از ارتفاع صفحه بیشتر شد، شکست صفحه اضافه کنیم
+                if (currentHeight > pageHeight && i < elements.length - 1) {
+                    const pageBreak = document.createElement('div');
+                    pageBreak.className = 'page-break';
+                    preview.insertBefore(pageBreak, elements[i + 1]);
+                    currentHeight = 0; // ریست ارتفاع برای صفحه جدید
+                }
+            }
+        });
+        
+        // تبدیل به PDF
+        document.getElementById('generatePdfBtn').addEventListener('click', function() {
+            // ابتدا شکست صفحه را نمایش می‌دهیم تا مطمئن شویم صفحات درست تقسیم شده‌اند
+            document.getElementById('showPageBreaksBtn').click();
+            
+            const preview = document.getElementById('preview');
+            const pageHeight = parseInt(document.getElementById('pageHeight').value) || 800;
+            
+            // با استفاده از html2canvas، پیش‌نمایش را به تصویر تبدیل می‌کنیم
+            generatePDF(preview, pageHeight);
+        });
+        
+        // تابع تولید PDF با پشتیبانی از چندین صفحه (تصویری)
+        function generatePDF(element, pageHeight) {
+            // محاسبه ابعاد صفحه A4 (در میلی‌متر)
+            const a4Width = 210;
+            const a4Height = 297;
+            const margin = 10;
+            
+            // تبدیل میلی‌متر به پیکسل (تقریبی، 3.779528 پیکسل = 1 میلی‌متر)
+            const pxPerMm = 3.779528;
+            const contentWidthPx = (a4Width - 2 * margin) * pxPerMm;
+            
+            // تقسیم محتوا به صفحات با استفاده از نشانگرهای شکست صفحه
+            const pageBreaks = Array.from(element.querySelectorAll('.page-break'));
+            const allElements = Array.from(element.childNodes);
+            const pages = [];
+            let currentPage = [];
+            let lastBreakIndex = -1;
+            
+            // برای هر شکست صفحه، المان‌های بین آن و شکست قبلی را به عنوان یک صفحه در نظر می‌گیریم
+            for (let i = 0; i < pageBreaks.length; i++) {
+                const breakElement = pageBreaks[i];
+                const breakIndex = allElements.indexOf(breakElement);
+                
+                if (breakIndex > lastBreakIndex + 1) {
+                    // اضافه کردن المان‌های بین دو شکست صفحه به عنوان یک صفحه
+                    const pageElements = allElements.slice(lastBreakIndex + 1, breakIndex)
+                        .filter(el => el.nodeName !== 'BR' && !el.classList?.contains('page-break'));
+                    
+                    if (pageElements.length > 0) {
+                        pages.push(pageElements);
+                    }
+                }
+                
+                lastBreakIndex = breakIndex;
+            }
+            
+            // اضافه کردن المان‌های بعد از آخرین شکست صفحه
+            const lastPageElements = allElements.slice(lastBreakIndex + 1)
+                .filter(el => el.nodeName !== 'BR' && !el.classList?.contains('page-break'));
+            
+            if (lastPageElements.length > 0) {
+                pages.push(lastPageElements);
+            }
+            
+            // اگر هیچ شکست صفحه‌ای وجود نداشت، کل محتوا را یک صفحه در نظر می‌گیریم
+            if (pages.length === 0) {
+                const pageElements = allElements.filter(el => el.nodeName !== 'BR');
+                if (pageElements.length > 0) {
+                    pages.push(pageElements);
+                }
+            }
+            
+            // ایجاد PDF
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4',
+                compress: true
+            });
+            
+            // پردازش هر صفحه
+            let pagePromises = [];
+            
+            pages.forEach((pageElements, pageIndex) => {
+                // ساخت یک المان موقت برای هر صفحه
+                const pageContainer = document.createElement('div');
+                pageContainer.style.width = contentWidthPx + 'px';
+                pageContainer.style.padding = '20px';
+                pageContainer.style.backgroundColor = 'white';
+                pageContainer.style.direction = 'rtl';
+                pageContainer.style.textAlign = 'right';
+                document.body.appendChild(pageContainer);
+                
+                // اضافه کردن المان‌های صفحه به کانتینر
+                pageElements.forEach(element => {
+                    if (element.cloneNode) {
+                        const clone = element.cloneNode(true);
+                        if (clone.classList && clone.classList.contains('page-break')) {
+                            return; // شکست صفحه‌ها را نادیده می‌گیریم
+                        }
+                        pageContainer.appendChild(clone);
+                    }
+                });
+                
+                // تبدیل به تصویر و اضافه کردن به PDF
+                const promise = html2canvas(pageContainer, {
+                    scale: 4, // افزایش کیفیت به حداکثر
+                    useCORS: true,
+                    logging: false,
+                    windowWidth: contentWidthPx
+                }).then(canvas => {
+                    // اضافه کردن صفحه جدید به PDF بعد از صفحه اول
+                    if (pageIndex > 0) {
+                        pdf.addPage();
+                    }
+                    
+                    const imgData = canvas.toDataURL('image/png');
+                    pdf.addImage(
+                        imgData,
+                        'PNG',
+                        margin,
+                        margin,
+                        a4Width - 2 * margin,
+                        (canvas.height * (a4Width - 2 * margin)) / canvas.width
+                    );
+                    
+                    // پاک کردن المان موقت
+                    document.body.removeChild(pageContainer);
+                }).catch(error => {
+                    console.error('Error generating PDF page:', error);
+                    alert('خطا در تولید PDF: ' + error.message);
+                });
+                
+                pagePromises.push(promise);
+            });
+            
+            // وقتی همه صفحات پردازش شدند، PDF را ذخیره کنید
+            Promise.all(pagePromises).then(() => {
+                pdf.save('document-farsi.pdf');
+            }).catch(error => {
+                console.error('Error saving PDF:', error);
+                alert('خطا در ذخیره PDF: ' + error.message);
+            });
+        }
+
+        // افزودن فونت سفارشی از طریق UI
+        document.getElementById('customFontInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (!file.name.toLowerCase().endsWith('.ttf')) {
+                alert('فقط فایل TTF مجاز است.');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const fontData = evt.target.result;
+                // حذف فونت قبلی اگر وجود دارد
+                const prevStyle = document.getElementById('customFontStyle');
+                if (prevStyle) prevStyle.remove();
+                // ساخت font-face جدید
+                const style = document.createElement('style');
+                style.id = 'customFontStyle';
+                style.innerHTML = `
+                @font-face {
+                    font-family: 'CustomFont';
+                    src: url(${fontData}) format('truetype');
+                    font-weight: normal;
+                }
+                `;
+                document.head.appendChild(style);
+                // نمایش گزینه فونت سفارشی در هر دو select
+                Array.from(document.querySelectorAll('select#titleFont, select#bodyFont')).forEach(sel => {
+                    let opt = sel.querySelector('option[value="CustomFont"]');
+                    if (opt) {
+                        opt.style.display = '';
+                        opt.selected = true;
+                    }
+                });
+                // به صورت پیش‌فرض فونت سفارشی را انتخاب کن
+                document.getElementById('titleFont').value = 'CustomFont';
+                document.getElementById('bodyFont').value = 'CustomFont';
+                // به map فونت اضافه کن
+                fontMap['CustomFont'] = 'CustomFont';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // دکمه کپی کل متن پیش‌نمایش
+        document.getElementById('copyPreviewBtn').addEventListener('click', function() {
+            // متن قابل کپی: فقط متن داخل preview (بدون استایل)
+            const preview = document.getElementById('preview');
+            // جمع‌آوری متن هر المان (عناوین و پاراگراف‌ها)
+            let text = '';
+            preview.childNodes.forEach(node => {
+                if (node.nodeType === 1 && node.classList && node.classList.contains('editable-content')) {
+                    text += node.textContent + '\n';
+                } else if (node.nodeType === 3) {
+                    text += node.textContent;
+                } else if (node.nodeName === 'BR') {
+                    text += '\n';
+                }
+            });
+            // حذف خطوط خالی اضافی انتها
+            text = text.replace(/\n{3,}/g, '\n\n').trim();
+            // کپی به کلیپ‌بورد
+            navigator.clipboard.writeText(text).then(() => {
+                // پیام موفقیت کوتاه
+                document.getElementById('copyPreviewBtn').textContent = 'کپی شد!';
+                setTimeout(() => {
+                    document.getElementById('copyPreviewBtn').textContent = 'کپی همه';
+                }, 1200);
+            });
+        });
+    </script>
+</body>
+</html>
