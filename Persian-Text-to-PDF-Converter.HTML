@@ -29,6 +29,15 @@
                 src: url('https://cdn.fontcdn.ir/Font/Persian/Kalameh/Kalameh-Black.ttf') format('truetype');
                 font-weight: bold;
             }
+
+            #copyPreviewBtn {
+                font-size: 12px !important;
+                padding: 4px 6px !important;
+                min-width: 40px !important;
+                height: auto !important;
+                margin: 0 !important;
+                align-self: flex-start;
+            }
         }
         
         :root {
@@ -106,7 +115,7 @@
             margin-top: 0;
             border-bottom: 2px solid var(--gray);
             padding-bottom: 8px;
-            margin-bottom: 14px;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
             font-size: 18px;
@@ -254,12 +263,13 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
+            gap: 8px;
         }
         
         .title-preview {
             font-family: 'KalamehBlack', 'Vazir', Tahoma;
             font-size: 24px;
-            margin-bottom: 15px;
+            margin-bottom: 1px;
             color: var(--text-color);
         }
         
@@ -297,18 +307,28 @@
             margin: 30px 0;
             position: relative;
             border-radius: 2px;
+            cursor: move; /* نشانگر جابجایی */
+            display: flex;
+            align-items: center;
         }
-        
-        .page-break::after {
-            content: "پایان صفحه";
-            position: absolute;
-            right: 0;
-            top: -12px;
-            font-size: 12px;
-            color: white;
-            background-color: var(--secondary-color);
-            padding: 2px 10px;
-            border-radius: 15px;
+        .page-break .break-handle {
+            width: 18px;
+            height: 18px;
+            background: var(--secondary-color);
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            margin-left: 8px;
+            cursor: grab;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            z-index: 2;
+        }
+        .page-break.drag-over {
+            background-color: #ffb3d1 !important;
         }
         
         /* استایل برای پیش‌نمایش صفحات */
@@ -407,6 +427,21 @@
             .preview {
                 padding: 10px 2vw;
             }
+
+            /* دکمه کپی همه متن در موبایل */
+            #copyPreviewBtn {
+                font-size: 12px !important;
+                padding: 4px 6px !important;
+                min-width: 40px !important;
+                height: auto !important;
+                margin: 0 !important;
+                align-self: flex-start;
+            }
+
+            .preview-header {
+                flex-direction: row;
+                gap: 4px;
+            }
         }
     </style>
 </head>
@@ -455,7 +490,7 @@
                 </div>
                 <div>
                     <label for="titleMargin">فاصله عنوان تا متن</label>
-                    <input type="number" id="titleMargin" value="15" min="0" max="100">
+                    <input type="number" id="titleMargin" value="2" min="0" max="100">
                 </div>
             </div>
             <div class="option-group">
@@ -484,8 +519,12 @@
             <!-- ورودی آپلود فونت TTF -->
             <div class="option-group">
                 <div>
-                    <label for="customFontInput">افزودن فونت TTF سفارشی</label>
-                    <input type="file" id="customFontInput" accept=".ttf">
+                    <label for="customTitleFontInput">افزودن فونت TTF سفارشی برای تیتر</label>
+                    <input type="file" id="customTitleFontInput" accept=".ttf">
+                </div>
+                <div>
+                    <label for="customBodyFontInput">افزودن فونت TTF سفارشی برای متن</label>
+                    <input type="file" id="customBodyFontInput" accept=".ttf">
                 </div>
             </div>
         </div>
@@ -508,9 +547,9 @@
         
         <div class="preview-container">
             <div class="preview-header">
-                <h3 class="section-title">پیش‌نمایش</h3>
+                <h3 class="section-title" style="margin-bottom:0;">پیش‌نمایش</h3>
                 <!-- دکمه کپی کل متن پیش‌نمایش -->
-                <button id="copyPreviewBtn" class="secondary" style="font-size:13px; padding:6px 18px;">کپی همه</button>
+                <button id="copyPreviewBtn" class="secondary" style="font-size:13px; padding:4px 8px; min-width:40px;">کپی همه</button>
             </div>
             <div class="preview" id="preview"></div>
         </div>
@@ -552,7 +591,7 @@
 
             // مقدار line-height را از ورودی بگیر
             const lineHeight = document.getElementById('lineHeight').value || 1.6;
-            const titleMargin = document.getElementById('titleMargin') ? document.getElementById('titleMargin').value : 15;
+            const titleMargin = document.getElementById('titleMargin') ? document.getElementById('titleMargin').value : 2;
 
             // تبدیل متن به پاراگراف‌ها و عنوان‌ها
             const lines = inputText.split('\n');
@@ -575,11 +614,13 @@
                         // این یک عنوان است
                         const titleFont = document.getElementById('titleFont').value;
                         const titleSize = document.getElementById('titleSize').value;
-                        
+                        let titleMargin = document.getElementById('titleMargin') ? document.getElementById('titleMargin').value : 2;
+                        titleMargin = Math.max(0, Number(titleMargin)); // حداقل مقدار 0
+
                         const titleElement = document.createElement('div');
                         titleElement.className = 'title-preview editable-content';
                         titleElement.textContent = cleanLine;
-                        titleElement.style.fontFamily = `${fontMap[titleFont]}, Tahoma`;
+                        titleElement.style.fontFamily = `${fontMap[titleFont] || titleFont}, Tahoma`;
                         titleElement.style.fontSize = `${titleSize}px`;
                         titleElement.contentEditable = "true";
                         // اعمال فاصله خطوط
@@ -596,7 +637,7 @@
                         const bodyElement = document.createElement('div');
                         bodyElement.className = 'body-preview editable-content';
                         bodyElement.textContent = cleanLine;
-                        bodyElement.style.fontFamily = `${fontMap[bodyFont]}, Tahoma`;
+                        bodyElement.style.fontFamily = `${fontMap[bodyFont] || bodyFont}, Tahoma`;
                         bodyElement.style.fontSize = `${bodySize}px`;
                         bodyElement.style.marginBottom = '10px';
                         bodyElement.contentEditable = "true";
@@ -612,7 +653,7 @@
             });
         });
         
-        // نمایش شکست صفحه در پیش‌نمایش
+        // نمایش شکست صفحه در پیش‌نمایش (با قابلیت جابجایی)
         document.getElementById('showPageBreaksBtn').addEventListener('click', function() {
             const pageHeight = parseInt(document.getElementById('pageHeight').value) || 800;
             const preview = document.getElementById('preview');
@@ -640,12 +681,124 @@
                 if (currentHeight > pageHeight && i < elements.length - 1) {
                     const pageBreak = document.createElement('div');
                     pageBreak.className = 'page-break';
+                    pageBreak.setAttribute('draggable', 'true');
+                    pageBreak.innerHTML = '<span class="break-handle" title="جابجایی شکست صفحه">&#9776;</span>';
+                    addPageBreakDragEvents(pageBreak);
                     preview.insertBefore(pageBreak, elements[i + 1]);
                     currentHeight = 0; // ریست ارتفاع برای صفحه جدید
                 }
             }
         });
-        
+
+        // بهبود یافته: فقط روی page-break و preview event بگذار
+        function addPageBreakDragEvents(pageBreak) {
+            // فقط روی handle درگ را فعال کن
+            const handle = pageBreak.querySelector('.break-handle');
+            handle.addEventListener('mousedown', function(e) {
+                pageBreak.setAttribute('draggable', 'true');
+            });
+            handle.addEventListener('mouseup', function(e) {
+                pageBreak.setAttribute('draggable', 'false');
+            });
+
+            pageBreak.addEventListener('dragstart', function(e) {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', 'page-break');
+                window._draggedPageBreak = pageBreak;
+                setTimeout(() => {
+                    pageBreak.style.opacity = '0.4';
+                }, 0);
+            });
+            pageBreak.addEventListener('dragend', function(e) {
+                pageBreak.style.opacity = '';
+                window._draggedPageBreak = null;
+                document.querySelectorAll('.page-break').forEach(pb => pb.classList.remove('drag-over'));
+            });
+
+            pageBreak.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                pageBreak.classList.add('drag-over');
+            });
+            pageBreak.addEventListener('dragleave', function(e) {
+                pageBreak.classList.remove('drag-over');
+            });
+            pageBreak.addEventListener('drop', function(e) {
+                e.preventDefault();
+                pageBreak.classList.remove('drag-over');
+                const dragged = window._draggedPageBreak;
+                if (dragged && dragged !== pageBreak) {
+                    // جابجایی: قبل یا بعد از این page-break بسته به موقعیت موس
+                    const rect = pageBreak.getBoundingClientRect();
+                    const offset = e.clientY - rect.top;
+                    if (offset < rect.height / 2) {
+                        pageBreak.parentNode.insertBefore(dragged, pageBreak);
+                    } else {
+                        if (pageBreak.nextSibling) {
+                            pageBreak.parentNode.insertBefore(dragged, pageBreak.nextSibling);
+                        } else {
+                            pageBreak.parentNode.appendChild(dragged);
+                        }
+                    }
+                }
+            });
+        }
+
+        // فقط یکبار event روی preview بگذار
+        (function() {
+            const preview = document.getElementById('preview');
+            preview.addEventListener('dragover', function(e) {
+                e.preventDefault();
+            });
+            preview.addEventListener('drop', function(e) {
+                e.preventDefault();
+                const dragged = window._draggedPageBreak;
+                if (dragged) {
+                    // پیدا کردن نزدیک‌ترین المان زیر موس
+                    let after = null;
+                    for (let node of preview.childNodes) {
+                        if (node.nodeType === 1 && node !== dragged) {
+                            const rect = node.getBoundingClientRect();
+                            if (e.clientY < rect.top + rect.height / 2) {
+                                after = node;
+                                break;
+                            }
+                        }
+                    }
+                    if (after) {
+                        preview.insertBefore(dragged, after);
+                    } else {
+                        preview.appendChild(dragged);
+                    }
+                }
+            });
+        })();
+
+        // اضافه کردن قابلیت جابجایی به page-breakهای موجود پس از هر بار نمایش پیش‌نمایش
+        function enablePageBreakDragAndDrop() {
+            const preview = document.getElementById('preview');
+            preview.querySelectorAll('.page-break').forEach(pb => {
+                pb.setAttribute('draggable', 'false');
+                if (!pb.querySelector('.break-handle')) {
+                    pb.innerHTML = '<span class="break-handle" title="جابجایی شکست صفحه">&#9776;</span>';
+                }
+                addPageBreakDragEvents(pb);
+            });
+        }
+
+        // اطمینان از فعال بودن drag & drop پس از هر بار پیش‌نمایش
+        const origPreviewBtnClick = document.getElementById('previewBtn').onclick;
+        document.getElementById('previewBtn').addEventListener('click', function() {
+            setTimeout(enablePageBreakDragAndDrop, 100);
+            if (typeof origPreviewBtnClick === 'function') origPreviewBtnClick();
+        });
+
+        // همچنین پس از نمایش شکست صفحه
+        const origShowPageBreaksBtnClick = document.getElementById('showPageBreaksBtn').onclick;
+        document.getElementById('showPageBreaksBtn').addEventListener('click', function() {
+            setTimeout(enablePageBreakDragAndDrop, 100);
+            if (typeof origShowPageBreaksBtnClick === 'function') origShowPageBreaksBtnClick();
+        });
+
         // تبدیل به PDF
         document.getElementById('generatePdfBtn').addEventListener('click', function() {
             // ابتدا شکست صفحه را نمایش می‌دهیم تا مطمئن شویم صفحات درست تقسیم شده‌اند
@@ -783,8 +936,8 @@
             });
         }
 
-        // افزودن فونت سفارشی از طریق UI
-        document.getElementById('customFontInput').addEventListener('change', function(e) {
+        // افزودن فونت سفارشی برای تیتر
+        document.getElementById('customTitleFontInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
             if (!file.name.toLowerCase().endsWith('.ttf')) {
@@ -794,33 +947,79 @@
             const reader = new FileReader();
             reader.onload = function(evt) {
                 const fontData = evt.target.result;
-                // حذف فونت قبلی اگر وجود دارد
-                const prevStyle = document.getElementById('customFontStyle');
+                // حذف فونت قبلی تیتر اگر وجود دارد
+                const prevStyle = document.getElementById('customTitleFontStyle');
                 if (prevStyle) prevStyle.remove();
-                // ساخت font-face جدید
+                // ساخت font-face جدید برای تیتر
                 const style = document.createElement('style');
-                style.id = 'customFontStyle';
+                style.id = 'customTitleFontStyle';
                 style.innerHTML = `
                 @font-face {
-                    font-family: 'CustomFont';
+                    font-family: 'CustomTitleFont';
                     src: url(${fontData}) format('truetype');
                     font-weight: normal;
                 }
                 `;
                 document.head.appendChild(style);
-                // نمایش گزینه فونت سفارشی در هر دو select
-                Array.from(document.querySelectorAll('select#titleFont, select#bodyFont')).forEach(sel => {
-                    let opt = sel.querySelector('option[value="CustomFont"]');
-                    if (opt) {
-                        opt.style.display = '';
-                        opt.selected = true;
-                    }
-                });
-                // به صورت پیش‌فرض فونت سفارشی را انتخاب کن
-                document.getElementById('titleFont').value = 'CustomFont';
-                document.getElementById('bodyFont').value = 'CustomFont';
+                // نمایش گزینه فونت سفارشی تیتر در select تیتر
+                let sel = document.getElementById('titleFont');
+                let opt = sel.querySelector('option[value="CustomTitleFont"]');
+                if (!opt) {
+                    opt = document.createElement('option');
+                    opt.value = 'CustomTitleFont';
+                    opt.textContent = 'فونت سفارشی تیتر';
+                    sel.appendChild(opt);
+                }
+                opt.style.display = '';
+                opt.selected = true;
+                // انتخاب فونت سفارشی تیتر
+                sel.value = 'CustomTitleFont';
                 // به map فونت اضافه کن
-                fontMap['CustomFont'] = 'CustomFont';
+                fontMap['CustomTitleFont'] = 'CustomTitleFont';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // افزودن فونت سفارشی برای متن
+        document.getElementById('customBodyFontInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (!file.name.toLowerCase().endsWith('.ttf')) {
+                alert('فقط فایل TTF مجاز است.');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const fontData = evt.target.result;
+                // حذف فونت قبلی متن اگر وجود دارد
+                const prevStyle = document.getElementById('customBodyFontStyle');
+                if (prevStyle) prevStyle.remove();
+                // ساخت font-face جدید برای متن
+                const style = document.createElement('style');
+                style.id = 'customBodyFontStyle';
+                style.innerHTML = `
+                @font-face {
+                    font-family: 'CustomBodyFont';
+                    src: url(${fontData}) format('truetype');
+                    font-weight: normal;
+                }
+                `;
+                document.head.appendChild(style);
+                // نمایش گزینه فونت سفارشی متن در select متن
+                let sel = document.getElementById('bodyFont');
+                let opt = sel.querySelector('option[value="CustomBodyFont"]');
+                if (!opt) {
+                    opt = document.createElement('option');
+                    opt.value = 'CustomBodyFont';
+                    opt.textContent = 'فونت سفارشی متن';
+                    sel.appendChild(opt);
+                }
+                opt.style.display = '';
+                opt.selected = true;
+                // انتخاب فونت سفارشی متن
+                sel.value = 'CustomBodyFont';
+                // به map فونت اضافه کن
+                fontMap['CustomBodyFont'] = 'CustomBodyFont';
             };
             reader.readAsDataURL(file);
         });
@@ -840,6 +1039,8 @@
                     text += '\n';
                 }
             });
+            // حذف کاراکترهای مربع (□ ▢ ■ ▣ ▤ ▥ ▦ ▧ ▨ ▩ و ...)
+            text = text.replace(/[\u25A0-\u25FF\u25A1\u25A2\u25A3\u25A4\u25A5\u25A6\u25A7\u25A8\u25A9]/g, '');
             // حذف خطوط خالی اضافی انتها
             text = text.replace(/\n{3,}/g, '\n\n').trim();
             // کپی به کلیپ‌بورد
