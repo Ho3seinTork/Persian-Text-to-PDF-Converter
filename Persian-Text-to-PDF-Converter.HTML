@@ -443,6 +443,81 @@
                 gap: 4px;
             }
         }
+
+        table.markdown-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-family: 'Vazir', Tahoma;
+            font-size: 15px;
+            direction: rtl;
+            text-align: right;
+        }
+        table.markdown-table th, table.markdown-table td {
+            border: 1px solid var(--gray);
+            padding: 6px 10px;
+            text-align: right;
+            direction: rtl;
+        }
+        table.markdown-table th {
+            background: var(--light-gray);
+            font-weight: bold;
+        }
+
+        body.dark-mode {
+            background: #181a1b !important;
+            color: #e0e0e0 !important;
+        }
+        .container.dark-mode {
+            background: #23272b !important;
+            color: #e0e0e0 !important;
+            box-shadow: none !important;
+        }
+        .section.dark-mode,
+        .preview.dark-mode,
+        .preview-page.dark-mode {
+            background: #23272b !important;
+            color: #e0e0e0 !important;
+            border-color: #444 !important;
+        }
+        .section-title.dark-mode {
+            color: #90caf9 !important;
+            border-bottom: 2px solid #444 !important;
+        }
+        .app-title.dark-mode {
+            color: #90caf9 !important;
+        }
+        .markdown-table.dark-mode,
+        .markdown-table.dark-mode th,
+        .markdown-table.dark-mode td {
+            background: #23272b !important;
+            color: #e0e0e0 !important;
+            border-color: #444 !important;
+        }
+        .markdown-table.dark-mode th {
+            background: #181a1b !important;
+        }
+        button.dark-mode {
+            background: #23272b !important;
+            color: #90caf9 !important;
+            border: 1px solid #90caf9 !important;
+        }
+        button.accent.dark-mode {
+            background: #b71c50 !important;
+            color: #fff !important;
+        }
+        button.secondary.dark-mode {
+            background: #23272b !important;
+            color: #90caf9 !important;
+            border: 1px solid #90caf9 !important;
+        }
+        textarea.dark-mode,
+        select.dark-mode,
+        input.dark-mode {
+            background: #23272b !important;
+            color: #e0e0e0 !important;
+            border-color: #444 !important;
+        }
     </style>
 </head>
 <body>
@@ -450,6 +525,8 @@
         <div class="app-header">
             <h1 class="app-title">مبدل متن فارسی به PDF</h1>
             <p class="app-description">با این ابزار می‌توانید متن فارسی خود را به راحتی به فایل PDF با قالب‌بندی مناسب تبدیل کنید</p>
+            <!-- دکمه دارک مود در بالای صفحه -->
+            <button id="darkModeBtn" class="secondary" style="font-size:13px; padding:4px 8px; min-width:40px; margin-top:10px;">دارک مود</button>
         </div>
         
         <div class="section">
@@ -466,7 +543,7 @@
                             <span class="tooltip-text">تعیین ارتفاع هر صفحه در خروجی PDF</span>
                         </span>
                     </label>
-                    <input type="number" id="pageHeight" value="800" min="500" max="1500">
+                    <input type="number" id="pageHeight" value="900" min="500" max="1500">
                 </div>
             </div>
             
@@ -542,14 +619,14 @@
             <div class="button-group">
                 <button id="previewBtn">پیش‌نمایش</button>
                 <button id="generatePdfBtn" class="accent">تبدیل به PDF</button>
+                <!-- دکمه کپی کل متن پیش‌نمایش به جای قبلی -->
+                <button id="copyPreviewBtn" class="secondary" style="font-size:13px; padding:4px 8px; min-width:40px;">کپی همه</button>
             </div>
         </div>
         
         <div class="preview-container">
             <div class="preview-header">
                 <h3 class="section-title" style="margin-bottom:0;">پیش‌نمایش</h3>
-                <!-- دکمه کپی کل متن پیش‌نمایش -->
-                <button id="copyPreviewBtn" class="secondary" style="font-size:13px; padding:4px 8px; min-width:40px;">کپی همه</button>
             </div>
             <div class="preview" id="preview"></div>
         </div>
@@ -583,7 +660,84 @@
             // 'CustomFont' به صورت داینامیک اضافه می‌شود
         };
         
-        // نمایش پیش‌نمایش
+        // تابع تبدیل جدول مارک‌داون به HTML table
+        function parseMarkdownTables(lines) {
+            const result = [];
+            let i = 0;
+            while (i < lines.length) {
+                // حذف خطوط جداکننده مارک‌داون (---)
+                if (/^\s*-{3,}\s*$/.test(lines[i])) {
+                    i++;
+                    continue;
+                }
+                // تشخیص شروع جدول مارک‌داون
+                if (
+                    /^\s*\|.*\|\s*$/.test(lines[i]) && // خط اول جدول
+                    i + 1 < lines.length &&
+                    /^\s*\|?[\s:-]+\|[\s|:-]*\s*$/.test(lines[i + 1]) // خط جداکننده
+                ) {
+                    // جمع‌آوری سطرهای جدول
+                    const tableLines = [];
+                    tableLines.push(lines[i]);
+                    tableLines.push(lines[i + 1]);
+                    let j = i + 2;
+                    while (j < lines.length && /^\s*\|.*\|\s*$/.test(lines[j])) {
+                        tableLines.push(lines[j]);
+                        j++;
+                    }
+                    // تبدیل به HTML table
+                    const table = document.createElement('table');
+                    table.className = 'markdown-table';
+                    table.dir = 'rtl';
+                    table.style.textAlign = 'right';
+                    // Header
+                    const headerCells = tableLines[0].trim().split('|').slice(1, -1).map(cell => cleanMarkdownCell(cell));
+                    const thead = document.createElement('thead');
+                    const trHead = document.createElement('tr');
+                    headerCells.forEach(cell => {
+                        const th = document.createElement('th');
+                        th.textContent = cell;
+                        th.dir = 'rtl';
+                        trHead.appendChild(th);
+                    });
+                    thead.appendChild(trHead);
+                    table.appendChild(thead);
+                    // Body
+                    const tbody = document.createElement('tbody');
+                    for (let k = 2; k < tableLines.length; k++) {
+                        const rowCells = tableLines[k].trim().split('|').slice(1, -1).map(cell => cleanMarkdownCell(cell));
+                        const tr = document.createElement('tr');
+                        rowCells.forEach(cell => {
+                            const td = document.createElement('td');
+                            td.textContent = cell;
+                            td.dir = 'rtl';
+                            tr.appendChild(td);
+                        });
+                        tbody.appendChild(tr);
+                    }
+                    table.appendChild(tbody);
+                    result.push(table);
+                    i = j;
+                } else {
+                    result.push(lines[i]);
+                    i++;
+                }
+            }
+            return result;
+        }
+
+        // تابع حذف نمادهای اضافی مارک‌داون از سلول جدول و متن
+        function cleanMarkdownCell(text) {
+            return text
+                .replace(/[*#`]/g, '') // حذف * و # و `
+                .replace(/<div\s+dir="?rtl"?\s*>/gi, '') // حذف <div dir="rtl">
+                .replace(/<\/div>/gi, '') // حذف </div>
+                .replace(/```[a-zA-Z]*|```/g, '') // حذف ``` و ```markdown
+                .replace(/^\s*-{3,}\s*$/g, '') // حذف خطوط ---
+                .trim();
+        }
+
+        // نمایش پیش‌نمایش (با پشتیبانی جدول مارک‌داون و حذف نمادهای اضافی)
         document.getElementById('previewBtn').addEventListener('click', function() {
             const inputText = document.getElementById('inputText').value;
             const preview = document.getElementById('preview');
@@ -593,66 +747,79 @@
             const lineHeight = document.getElementById('lineHeight').value || 1.6;
             const titleMargin = document.getElementById('titleMargin') ? document.getElementById('titleMargin').value : 2;
 
-            // تبدیل متن به پاراگراف‌ها و عنوان‌ها
-            const lines = inputText.split('\n');
+            // تبدیل متن به پاراگراف‌ها و عنوان‌ها و جدول‌ها
+            let lines = inputText.split('\n');
+            // تبدیل جدول‌های مارک‌داون به table
+            const parsed = parseMarkdownTables(lines);
 
-            lines.forEach(line => {
-                // حذف علامت‌های * و # از ابتدا و انتهای متن
-                let cleanLine = line.trim();
-                // حذف علامت # در ابتدای خط
-                let isTitle = false;
-                if (cleanLine.startsWith('#')) {
-                    isTitle = true;
-                    cleanLine = cleanLine.replace(/^#+\s*/, '');
-                }
-                
-                // حذف علامت‌های * از کل متن
-                cleanLine = cleanLine.replace(/\*/g, '');
-                
-                if (cleanLine) {
-                    if (isTitle) {
-                        // این یک عنوان است
-                        const titleFont = document.getElementById('titleFont').value;
-                        const titleSize = document.getElementById('titleSize').value;
-                        let titleMargin = document.getElementById('titleMargin') ? document.getElementById('titleMargin').value : 2;
-                        titleMargin = Math.max(0, Number(titleMargin)); // حداقل مقدار 0
-
-                        const titleElement = document.createElement('div');
-                        titleElement.className = 'title-preview editable-content';
-                        titleElement.textContent = cleanLine;
-                        titleElement.style.fontFamily = `${fontMap[titleFont] || titleFont}, Tahoma`;
-                        titleElement.style.fontSize = `${titleSize}px`;
-                        titleElement.contentEditable = "true";
-                        // اعمال فاصله خطوط
-                        titleElement.style.lineHeight = lineHeight;
-                        // اعمال فاصله عنوان تا متن
-                        titleElement.style.marginBottom = `${titleMargin}px`;
-                        
-                        preview.appendChild(titleElement);
-                    } else {
-                        // این یک پاراگراف متن است
-                        const bodyFont = document.getElementById('bodyFont').value;
-                        const bodySize = document.getElementById('bodySize').value;
-                        
-                        const bodyElement = document.createElement('div');
-                        bodyElement.className = 'body-preview editable-content';
-                        bodyElement.textContent = cleanLine;
-                        bodyElement.style.fontFamily = `${fontMap[bodyFont] || bodyFont}, Tahoma`;
-                        bodyElement.style.fontSize = `${bodySize}px`;
-                        bodyElement.style.marginBottom = '10px';
-                        bodyElement.contentEditable = "true";
-                        // اعمال فاصله خطوط
-                        bodyElement.style.lineHeight = lineHeight;
-                        
-                        preview.appendChild(bodyElement);
+            parsed.forEach(item => {
+                if (typeof item === 'string') {
+                    // حذف نمادهای اضافی و خطوط ---
+                    let cleanLine = item.trim();
+                    // حذف خطوط جداکننده مارک‌داون (---)
+                    if (/^\s*-{3,}\s*$/.test(cleanLine)) return;
+                    // حذف ``` و ```markdown
+                    if (/^```[a-zA-Z]*$/.test(cleanLine) || cleanLine === '```') return;
+                    // حذف <div dir="rtl"> و </div>
+                    cleanLine = cleanLine.replace(/<div\s+dir="?rtl"?\s*>/gi, '').replace(/<\/div>/gi, '');
+                    // حذف علامت # در ابتدای خط
+                    let isTitle = false;
+                    if (cleanLine.startsWith('#')) {
+                        isTitle = true;
+                        cleanLine = cleanLine.replace(/^#+\s*/, '');
                     }
-                } else {
-                    // خط خالی
-                    preview.appendChild(document.createElement('br'));
+                    // حذف علامت‌های * و # و `
+                    cleanLine = cleanLine.replace(/[*#`]/g, '');
+                    cleanLine = cleanLine.trim();
+                    if (cleanLine) {
+                        if (isTitle) {
+                            // این یک عنوان است
+                            const titleFont = document.getElementById('titleFont').value;
+                            const titleSize = document.getElementById('titleSize').value;
+                            let titleMargin = document.getElementById('titleMargin') ? document.getElementById('titleMargin').value : 2;
+                            titleMargin = Math.max(0, Number(titleMargin)); // حداقل مقدار 0
+
+                            const titleElement = document.createElement('div');
+                            titleElement.className = 'title-preview editable-content';
+                            titleElement.textContent = cleanLine;
+                            titleElement.style.fontFamily = `${fontMap[titleFont] || titleFont}, Tahoma`;
+                            titleElement.style.fontSize = `${titleSize}px`;
+                            titleElement.contentEditable = "true";
+                            titleElement.style.lineHeight = lineHeight;
+                            titleElement.style.marginBottom = `${titleMargin}px`;
+                            titleElement.dir = 'rtl';
+                            titleElement.style.textAlign = 'right';
+                            preview.appendChild(titleElement);
+                        } else {
+                            // این یک پاراگراف متن است
+                            const bodyFont = document.getElementById('bodyFont').value;
+                            const bodySize = document.getElementById('bodySize').value;
+
+                            const bodyElement = document.createElement('div');
+                            bodyElement.className = 'body-preview editable-content';
+                            bodyElement.textContent = cleanLine;
+                            bodyElement.style.fontFamily = `${fontMap[bodyFont] || bodyFont}, Tahoma`;
+                            bodyElement.style.fontSize = `${bodySize}px`;
+                            bodyElement.style.marginBottom = '10px';
+                            bodyElement.contentEditable = "true";
+                            bodyElement.style.lineHeight = lineHeight;
+                            bodyElement.dir = 'rtl';
+                            bodyElement.style.textAlign = 'right';
+                            preview.appendChild(bodyElement);
+                        }
+                    } else {
+                        // خط خالی
+                        preview.appendChild(document.createElement('br'));
+                    }
+                } else if (item instanceof HTMLElement && item.tagName === 'TABLE') {
+                    // جدول مارک‌داون
+                    item.dir = 'rtl';
+                    item.style.textAlign = 'right';
+                    preview.appendChild(item);
                 }
             });
         });
-        
+
         // نمایش شکست صفحه در پیش‌نمایش (با قابلیت جابجایی)
         document.getElementById('showPageBreaksBtn').addEventListener('click', function() {
             const pageHeight = parseInt(document.getElementById('pageHeight').value) || 800;
@@ -733,11 +900,7 @@
                     if (offset < rect.height / 2) {
                         pageBreak.parentNode.insertBefore(dragged, pageBreak);
                     } else {
-                        if (pageBreak.nextSibling) {
-                            pageBreak.parentNode.insertBefore(dragged, pageBreak.nextSibling);
-                        } else {
-                            pageBreak.parentNode.appendChild(dragged);
-                        }
+                        pageBreak.parentNode.insertBefore(dragged, pageBreak.nextSibling);
                     }
                 }
             });
@@ -1024,33 +1187,187 @@
             reader.readAsDataURL(file);
         });
 
+        // تبدیل جدول HTML به RTF برای ورد با رعایت فونت و سایز
+        function tableToWordFriendlyText(table) {
+            const bodyFont = document.getElementById('bodyFont').value;
+            const bodySize = document.getElementById('bodySize').value;
+            const container = document.createElement('div');
+            container.style.direction = 'rtl';
+
+            const wordTable = document.createElement('table');
+            wordTable.style.cssText = `
+                width: auto;
+                direction: rtl;
+                border-collapse: collapse;
+                font-family: ${fontMap[bodyFont] || bodyFont}, Tahoma;
+                font-size: ${bodySize}px;
+                margin: 4px 0;
+                background: none !important;
+            `;
+
+            // Header
+            const headers = Array.from(table.querySelectorAll('thead tr th')).map(th => th.textContent.trim());
+            if (headers.length) {
+                const thead = document.createElement('thead');
+                const tr = document.createElement('tr');
+                headers.forEach(text => {
+                    const th = document.createElement('th');
+                    th.style.cssText = `
+                        border: 1px solid black;
+                        padding: 4px 8px;
+                        font-weight: bold;
+                        text-align: right;
+                        background: none !important;
+                    `;
+                    th.textContent = text;
+                    tr.appendChild(th);
+                });
+                thead.appendChild(tr);
+                wordTable.appendChild(thead);
+            }
+
+            // Rows
+            const tbody = document.createElement('tbody');
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(tr => {
+                const newTr = document.createElement('tr');
+                Array.from(tr.querySelectorAll('td')).forEach(td => {
+                    const newTd = document.createElement('td');
+                    newTd.style.cssText = `
+                        border: 1px solid black;
+                        padding: 4px 8px;
+                        text-align: right;
+                        background: none !important;
+                    `;
+                    newTd.textContent = td.textContent.trim();
+                    newTr.appendChild(newTd);
+                });
+                tbody.appendChild(newTr);
+            });
+            wordTable.appendChild(tbody);
+            container.appendChild(wordTable);
+
+            return container.innerHTML;
+        }
+
+        // تبدیل جدول به متن تب‌دار (برای plainText fallback)
+        function tableToTabularText(table) {
+            let txt = '';
+            // Header
+            const headers = Array.from(table.querySelectorAll('thead tr th')).map(th => th.textContent.trim());
+            if (headers.length) {
+                txt += headers.join('\t') + '\n';
+            }
+            // Rows
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(tr => {
+                const cells = Array.from(tr.querySelectorAll('td')).map(td => td.textContent.trim());
+                txt += cells.join('\t') + '\n';
+            });
+            return txt.trim();
+        }
+
         // دکمه کپی کل متن پیش‌نمایش
         document.getElementById('copyPreviewBtn').addEventListener('click', function() {
-            // متن قابل کپی: فقط متن داخل preview (بدون استایل)
             const preview = document.getElementById('preview');
-            // جمع‌آوری متن هر المان (عناوین و پاراگراف‌ها)
-            let text = '';
-            preview.childNodes.forEach(node => {
-                if (node.nodeType === 1 && node.classList && node.classList.contains('editable-content')) {
-                    text += node.textContent + '\n';
-                } else if (node.nodeType === 3) {
-                    text += node.textContent;
-                } else if (node.nodeName === 'BR') {
-                    text += '\n';
-                }
+            // کل HTML پیش‌نمایش را می‌گیریم
+            let html = preview.innerHTML;
+
+            // اگر از markdown-it یا Showdown استفاده می‌کنید و جدول‌ها را به <table> تبدیل می‌کند،
+            // همین کافی است. اگر نه، می‌توانید اینجا تبدیل دستی انجام دهید.
+
+            // یک تگ موقت برای حذف اسکریپت و استایل‌های اضافی
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+
+            // حذف ویژگی‌های غیرضروری و اطمینان از اینکه همه جدول‌ها <table> واقعی هستند
+            tempDiv.querySelectorAll('table').forEach(tbl => {
+                tbl.removeAttribute('style');
+                tbl.className = ''; // حذف کلاس‌های اضافی
+                tbl.dir = 'rtl';
+                tbl.style.direction = 'rtl';
+                tbl.style.textAlign = 'right';
+                tbl.style.borderCollapse = 'collapse';
+                tbl.style.width = '100%';
+                tbl.querySelectorAll('th, td').forEach(cell => {
+                    cell.style.border = '1px solid #888';
+                    cell.style.padding = '6px 10px';
+                    cell.style.textAlign = 'right';
+                    cell.dir = 'rtl';
+                });
             });
-            // حذف کاراکترهای مربع (□ ▢ ■ ▣ ▤ ▥ ▦ ▧ ▨ ▩ و ...)
-            text = text.replace(/[\u25A0-\u25FF\u25A1\u25A2\u25A3\u25A4\u25A5\u25A6\u25A7\u25A8\u25A9]/g, '');
-            // حذف خطوط خالی اضافی انتها
-            text = text.replace(/\n{3,}/g, '\n\n').trim();
-            // کپی به کلیپ‌بورد
-            navigator.clipboard.writeText(text).then(() => {
-                // پیام موفقیت کوتاه
-                document.getElementById('copyPreviewBtn').textContent = 'کپی شد!';
-                setTimeout(() => {
-                    document.getElementById('copyPreviewBtn').textContent = 'کپی همه';
-                }, 1200);
+
+            // کپی HTML به کلیپ‌بورد (Clipboard API)
+            if (navigator.clipboard && window.ClipboardItem) {
+                const blob = new Blob([tempDiv.innerHTML], { type: 'text/html' });
+                const data = [new window.ClipboardItem({ 'text/html': blob })];
+                navigator.clipboard.write(data).then(() => {
+                    document.getElementById('copyPreviewBtn').textContent = 'کپی شد!';
+                    setTimeout(() => {
+                        document.getElementById('copyPreviewBtn').textContent = 'کپی همه';
+                    }, 1200);
+                }).catch(() => {
+                    fallbackCopyHtml(tempDiv.innerHTML);
+                });
+            } else {
+                fallbackCopyHtml(tempDiv.innerHTML);
+            }
+
+            function fallbackCopyHtml(html) {
+                // روش قدیمی: یک contenteditable بساز و انتخاب کن
+                const el = document.createElement('div');
+                el.innerHTML = html;
+                el.contentEditable = 'true';
+                el.style.position = 'fixed';
+                el.style.opacity = '0';
+                document.body.appendChild(el);
+                const range = document.createRange();
+                range.selectNodeContents(el);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+                try {
+                    document.execCommand('copy');
+                    document.getElementById('copyPreviewBtn').textContent = 'کپی شد!';
+                    setTimeout(() => {
+                        document.getElementById('copyPreviewBtn').textContent = 'کپی همه';
+                    }, 1200);
+                } catch (err) {}
+                document.body.removeChild(el);
+            }
+        });
+
+        // تبدیل جدول به متن با تب
+        function tableToTabularText(table) {
+            let txt = '';
+            const headers = Array.from(table.querySelectorAll('thead tr th'))
+                .map(th => th.textContent.trim());
+            if (headers.length) {
+                txt += headers.join('\t') + '\n';
+            }
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(tr => {
+                const cells = Array.from(tr.querySelectorAll('td'))
+                    .map(td => td.textContent.trim());
+                txt += cells.join('\t') + '\n';
             });
+            return txt;
+        }
+
+        // دارک مود
+        document.getElementById('darkModeBtn').addEventListener('click', function() {
+            document.body.classList.toggle('dark-mode');
+            document.querySelector('.container').classList.toggle('dark-mode');
+            document.querySelectorAll('.section').forEach(e => e.classList.toggle('dark-mode'));
+            document.querySelectorAll('.section-title').forEach(e => e.classList.toggle('dark-mode'));
+            document.querySelectorAll('.app-title').forEach(e => e.classList.toggle('dark-mode'));
+            document.querySelectorAll('.preview').forEach(e => e.classList.toggle('dark-mode'));
+            document.querySelectorAll('.preview-page').forEach(e => e.classList.toggle('dark-mode'));
+            document.querySelectorAll('button').forEach(e => e.classList.toggle('dark-mode'));
+            document.querySelectorAll('textarea').forEach(e => e.classList.toggle('dark-mode'));
+            document.querySelectorAll('select').forEach(e => e.classList.toggle('dark-mode'));
+            document.querySelectorAll('input').forEach(e => e.classList.toggle('dark-mode'));
+            document.querySelectorAll('.markdown-table').forEach(e => e.classList.toggle('dark-mode'));
         });
     </script>
 </body>
