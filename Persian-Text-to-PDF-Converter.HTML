@@ -625,6 +625,8 @@
                 <button id="generatePdfBtn" class="accent">تبدیل به PDF</button>
                 <!-- دکمه کپی کل متن پیش‌نمایش به جای قبلی -->
                 <button id="copyPreviewBtn" class="secondary" style="font-size:13px; padding:4px 8px; min-width:40px;">کپی همه</button>
+                <!-- اضافه کردن دکمه چسباندن -->
+                <button id="pastePreviewBtn" class="secondary" style="font-size:13px; padding:4px 8px; min-width:40px;">چسباندن</button>
             </div>
         </div>
         
@@ -1372,6 +1374,20 @@
             document.querySelectorAll('select').forEach(e => e.classList.toggle('dark-mode'));
             document.querySelectorAll('input').forEach(e => e.classList.toggle('dark-mode'));
             document.querySelectorAll('.markdown-table').forEach(e => e.classList.toggle('dark-mode'));
+        });
+
+        // دکمه چسباندن متن از کلیپ‌بورد
+        document.getElementById('pastePreviewBtn').addEventListener('click', function() {
+            if (navigator.clipboard && navigator.clipboard.readText) {
+                navigator.clipboard.readText().then(text => {
+                    document.getElementById('inputText').value = text;
+                }).catch(err => {
+                    console.error('Paste error:', err);
+                    alert('خطا در چسباندن متن.');
+                });
+            } else {
+                alert('قابلیت چسباندن از کلیپ‌بورد پشتیبانی نمی‌شود.');
+            }
         });
     </script>
 </body>
