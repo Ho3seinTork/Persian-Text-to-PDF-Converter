@@ -522,7 +522,39 @@
             color: #e0e0e0 !important;
             border-color: #444 !important;
         }
+
+        /* تم اختصاصی برای کدهای پایتون و ++C */
+        .code-block {
+            font-family: 'Fira Mono', 'Consolas', 'Courier New', monospace;
+            font-size: 15px;
+            background: #23272b;
+            color: #e0e0e0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 12px 0;
+            direction: ltr;
+            text-align: left;
+            overflow-x: auto;
+            border: 1px solid #444;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            white-space: pre;
+        }
+        .code-block.python { border-left: 5px solid #3572A5; }
+        .code-block.cpp { border-left: 5px solid #f34b7d; }
+        /* رنگ‌بندی ساده برای کلیدواژه‌ها */
+        .code-keyword { color: #ffd700; font-weight: bold; }
+        .code-type { color: #7ec699; }
+        .code-string { color: #ce9178; }
+        .code-comment { color: #6a9955; font-style: italic; }
     </style>
+    <!-- افزودن MathJax برای رندر فرمول‌های ریاضی -->
+    <script>
+      window.MathJax = {
+        tex: {inlineMath: [['$', '$'], ['\\(', '\\)']]},
+        svg: {fontCache: 'global'}
+      };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 </head>
 <body>
     <div class="container">
@@ -531,6 +563,8 @@
             <p class="app-description">با این ابزار می‌توانید متن فارسی خود را به راحتی به فایل PDF با قالب‌بندی مناسب تبدیل کنید</p>
             <!-- دکمه دارک مود در بالای صفحه -->
             <button id="darkModeBtn" class="secondary" style="font-size:13px; padding:4px 8px; min-width:40px; margin-top:10px;">دارک مود</button>
+            <!-- دکمه فعال‌سازی فرمول ریاضی -->
+            <button id="toggleMathBtn" class="secondary" style="font-size:13px; padding:4px 8px; min-width:40px; margin-top:10px;">فرمول ریاضی: خاموش</button>
         </div>
         
         <div class="section">
@@ -743,6 +777,17 @@
                 .trim();
         }
 
+        // وضعیت فعال بودن MathJax
+        let mathEnabled = false;
+
+        // دکمه فعال/غیرفعال کردن MathJax
+        document.getElementById('toggleMathBtn').addEventListener('click', function() {
+            mathEnabled = !mathEnabled;
+            this.textContent = mathEnabled ? 'فرمول ریاضی: روشن' : 'فرمول ریاضی: خاموش';
+            // اگر روشن شد، پیش‌نمایش را مجدد رندر کن تا فرمول‌ها نمایش داده شوند
+            document.getElementById('previewBtn').click();
+        });
+
         // نمایش پیش‌نمایش (با پشتیبانی جدول مارک‌داون و حذف نمادهای اضافی)
         document.getElementById('previewBtn').addEventListener('click', function() {
             const inputText = document.getElementById('inputText').value;
@@ -824,6 +869,11 @@
                     preview.appendChild(item);
                 }
             });
+
+            // پس از تولید پیش‌نمایش، فرمول‌های ریاضی را رندر کن اگر فعال است
+            if (mathEnabled && window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([document.getElementById('preview')]);
+            }
         });
 
         // نمایش شکست صفحه در پیش‌نمایش (با قابلیت جابجایی)
@@ -860,6 +910,11 @@
                     preview.insertBefore(pageBreak, elements[i + 1]);
                     currentHeight = 0; // ریست ارتفاع برای صفحه جدید
                 }
+            }
+
+            // پس از افزودن شکست صفحه، فرمول‌ها را مجدد رندر کن اگر فعال است
+            if (mathEnabled && window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([document.getElementById('preview')]);
             }
         });
 
@@ -955,17 +1010,11 @@
         }
 
         // اطمینان از فعال بودن drag & drop پس از هر بار پیش‌نمایش
-        const origPreviewBtnClick = document.getElementById('previewBtn').onclick;
-        document.getElementById('previewBtn').addEventListener('click', function() {
-            setTimeout(enablePageBreakDragAndDrop, 100);
-            if (typeof origPreviewBtnClick === 'function') origPreviewBtnClick();
-        });
-
         // همچنین پس از نمایش شکست صفحه
-        const origShowPageBreaksBtnClick = document.getElementById('showPageBreaksBtn').onclick;
+        const origShowPageBreaksBtnClick2 = document.getElementById('showPageBreaksBtn').onclick;
         document.getElementById('showPageBreaksBtn').addEventListener('click', function() {
             setTimeout(enablePageBreakDragAndDrop, 100);
-            if (typeof origShowPageBreaksBtnClick === 'function') origShowPageBreaksBtnClick();
+            if (typeof origShowPageBreaksBtnClick2 === 'function') origShowPageBreaksBtnClick2();
         });
 
         // تبدیل به PDF
@@ -1389,6 +1438,426 @@
                 alert('قابلیت چسباندن از کلیپ‌بورد پشتیبانی نمی‌شود.');
             }
         });
-    </script>
-</body>
-</html>
+
+        // تابع ساده برای هایلایت کد پایتون و ++C
+    function highlightCode(code, lang) {
+        if (lang === 'python') {
+            // کلیدواژه‌های پایتون
+            code = code.replace(/\b(def|class|import|from|as|if|elif|else|for|while|return|with|try|except|finally|break|continue|pass|lambda|yield|global|nonlocal|assert|del|raise|True|False|None)\b/g,
+                '<span class="code-keyword">$1</span>');
+            // رشته‌ها
+            code = code.replace(/('[^']*'|"[^"]*")/g, '<span class="code-string">$1</span>');
+            // کامنت‌ها
+            code = code.replace(/(#.*)/g, '<span class="code-comment">$1</span>');
+        } else if (lang === 'cpp') {
+            // کلیدواژه‌های ++C
+            code = code.replace(/\b(int|float|double|char|void|bool|if|else|for|while|return|break|continue|class|struct|public|private|protected|virtual|static|const|using|namespace|include|new|delete|try|catch|throw|true|false)\b/g,
+                '<span class="code-keyword">$1</span>');
+            // نوع‌ها
+            code = code.replace(/\b(std|string|vector|map|set|cout|cin|endl)\b/g, '<span class="code-type">$1</span>');
+            // رشته‌ها
+            code = code.replace(/("[^"]*")/g, '<span class="code-string">$1</span>');
+            // کامنت‌ها
+            code = code.replace(/(\/\/.*)/g, '<span class="code-comment">$1</span>');
+            code = code.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="code-comment">$1</span>');
+        }
+        return code;
+    }
+
+    // تشخیص و رندر کدهای پایتون و ++C در پیش‌نمایش
+    document.getElementById('previewBtn').addEventListener('click', function() {
+        const inputText = document.getElementById('inputText').value;
+        const preview = document.getElementById('preview');
+        preview.innerHTML = '';
+
+        // مقدار line-height را از ورودی بگیر
+        const lineHeight = document.getElementById('lineHeight').value || 1.6;
+        const titleMargin = document.getElementById('titleMargin') ? document.getElementById('titleMargin').value : 2;
+
+        // تبدیل متن به پاراگراف‌ها و عنوان‌ها و جدول‌ها
+        let lines = inputText.split('\n');
+        // تبدیل جدول‌های مارک‌داون به table
+        const parsed = parseMarkdownTables(lines);
+
+        parsed.forEach(item => {
+            if (typeof item === 'string') {
+                let cleanLine = item.trim();
+                // حذف نمادهای اضافی و خطوط ---
+                if (/^\s*-{3,}\s*$/.test(cleanLine)) return;
+                // حذف ``` و ```markdown
+                if (/^```[a-zA-Z]*$/.test(cleanLine) || cleanLine === '```') return;
+                // حذف <div dir="rtl"> و </div>
+                cleanLine = cleanLine.replace(/<div\s+dir="?rtl"?\s*>/gi, '').replace(/<\/div>/gi, '');
+                // حذف علامت # در ابتدای خط
+                let isTitle = false;
+                if (cleanLine.startsWith('#')) {
+                    isTitle = true;
+                    cleanLine = cleanLine.replace(/^#+\s*/, '');
+                }
+                // حذف علامت‌های * و # و `
+                cleanLine = cleanLine.replace(/[*#`]/g, '');
+                cleanLine = cleanLine.trim();
+                if (cleanLine) {
+                    if (isTitle) {
+                        // این یک عنوان است
+                        const titleFont = document.getElementById('titleFont').value;
+                        const titleSize = document.getElementById('titleSize').value;
+                        let titleMargin = document.getElementById('titleMargin') ? document.getElementById('titleMargin').value : 2;
+                        titleMargin = Math.max(0, Number(titleMargin)); // حداقل مقدار 0
+
+                        const titleElement = document.createElement('div');
+                        titleElement.className = 'title-preview editable-content';
+                        titleElement.textContent = cleanLine;
+                        titleElement.style.fontFamily = `${fontMap[titleFont] || titleFont}, Tahoma`;
+                        titleElement.style.fontSize = `${titleSize}px`;
+                        titleElement.contentEditable = "true";
+                        titleElement.style.lineHeight = lineHeight;
+                        titleElement.style.marginBottom = `${titleMargin}px`;
+                        titleElement.dir = 'rtl';
+                        titleElement.style.textAlign = 'right';
+                        preview.appendChild(titleElement);
+                    } else {
+                        // این یک پاراگراف متن است
+                        const bodyFont = document.getElementById('bodyFont').value;
+                        const bodySize = document.getElementById('bodySize').value;
+
+                        const bodyElement = document.createElement('div');
+                        bodyElement.className = 'body-preview editable-content';
+                        bodyElement.textContent = cleanLine;
+                        bodyElement.style.fontFamily = `${fontMap[bodyFont] || bodyFont}, Tahoma`;
+                        bodyElement.style.fontSize = `${bodySize}px`;
+                        bodyElement.style.marginBottom = '10px';
+                        bodyElement.contentEditable = "true";
+                        bodyElement.style.lineHeight = lineHeight;
+                        bodyElement.dir = 'rtl';
+                        bodyElement.style.textAlign = 'right';
+                        preview.appendChild(bodyElement);
+                    }
+                } else {
+                    // خط خالی
+                    preview.appendChild(document.createElement('br'));
+                }
+            } else if (item instanceof HTMLElement && item.tagName === 'TABLE') {
+                // جدول مارک‌داون
+                item.dir = 'rtl';
+                item.style.textAlign = 'right';
+                preview.appendChild(item);
+            } else if (typeof item === 'string') {
+                let cleanLine = item.trim();
+                // تشخیص شروع و پایان بلاک کد
+                if (/^```(python|cpp)\s*$/i.test(cleanLine)) {
+                    // شروع بلاک کد
+                    let lang = cleanLine.match(/^```(python|cpp)\s*$/i)[1].toLowerCase();
+                    let codeLines = [];
+                    let idx = parsed.indexOf(item) + 1;
+                    // جمع‌آوری خطوط تا پایان بلاک کد
+                    while (idx < parsed.length && typeof parsed[idx] === 'string' && !/^```/.test(parsed[idx].trim())) {
+                        codeLines.push(parsed[idx]);
+                        idx++;
+                    }
+                    // اگر پایان بلاک پیدا شد
+                    if (idx < parsed.length && typeof parsed[idx] === 'string' && /^```/.test(parsed[idx].trim())) {
+                        // حذف خطوط بلاک کد از parsed
+                        for (let k = parsed.indexOf(item); k <= idx; k++) parsed[k] = null;
+                        // ساخت المان کد
+                        const codeBlock = document.createElement('pre');
+                        codeBlock.className = `code-block ${lang}`;
+                        codeBlock.innerHTML = highlightCode(codeLines.join('\n'), lang);
+                        codeBlock.setAttribute('dir', 'ltr');
+                        codeBlock.setAttribute('contenteditable', 'false');
+                        preview.appendChild(codeBlock);
+                        return;
+                    }
+                }
+            }
+        });
+
+        // پس از تولید پیش‌نمایش، فرمول‌های ریاضی را رندر کن اگر فعال است
+        if (mathEnabled && window.MathJax && window.MathJax.typesetPromise) {
+            MathJax.typesetPromise([document.getElementById('preview')]);
+        }
+    });
+
+        // نمایش شکست صفحه در پیش‌نمایش (با قابلیت جابجایی)
+        document.getElementById('showPageBreaksBtn').addEventListener('click', function() {
+            const pageHeight = parseInt(document.getElementById('pageHeight').value) || 800;
+            const preview = document.getElementById('preview');
+            
+            // ابتدا پیش‌نمایش را به‌روز می‌کنیم اگر خالی است
+            if (preview.children.length === 0) {
+                document.getElementById('previewBtn').click();
+            }
+            
+            // حذف نشانگرهای قبلی شکست صفحه
+            const existingPageBreaks = document.querySelectorAll('.page-break');
+            existingPageBreaks.forEach(pb => pb.remove());
+            
+            // بررسی ارتفاع کلی و افزودن نشانگرهای شکست صفحه
+            let currentHeight = 0;
+            const elements = Array.from(preview.children);
+            
+            for (let i = 0; i < elements.length; i++) {
+                const element = elements[i];
+                const elementHeight = element.offsetHeight;
+                
+                currentHeight += elementHeight;
+                
+                // اگر از ارتفاع صفحه بیشتر شد، شکست صفحه اضافه کنیم
+                if (currentHeight > pageHeight && i < elements.length - 1) {
+                    const pageBreak = document.createElement('div');
+                    pageBreak.className = 'page-break';
+                    pageBreak.setAttribute('draggable', 'true');
+                    pageBreak.innerHTML = '<span class="break-handle" title="جابجایی شکست صفحه">&#9776;</span>';
+                    addPageBreakDragEvents(pageBreak);
+                    preview.insertBefore(pageBreak, elements[i + 1]);
+                    currentHeight = 0; // ریست ارتفاع برای صفحه جدید
+                }
+            }
+
+            // پس از افزودن شکست صفحه، فرمول‌ها را مجدد رندر کن اگر فعال است
+            if (mathEnabled && window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([document.getElementById('preview')]);
+            }
+        });
+
+        // بهبود یافته: فقط روی page-break و preview event بگذار
+        function addPageBreakDragEvents(pageBreak) {
+            // فقط روی handle درگ را فعال کن
+            const handle = pageBreak.querySelector('.break-handle');
+            handle.addEventListener('mousedown', function(e) {
+                pageBreak.setAttribute('draggable', 'true');
+            });
+            handle.addEventListener('mouseup', function(e) {
+                pageBreak.setAttribute('draggable', 'false');
+            });
+
+            pageBreak.addEventListener('dragstart', function(e) {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', 'page-break');
+                window._draggedPageBreak = pageBreak;
+                setTimeout(() => {
+                    pageBreak.style.opacity = '0.4';
+                }, 0);
+            });
+            pageBreak.addEventListener('dragend', function(e) {
+                pageBreak.style.opacity = '';
+                window._draggedPageBreak = null;
+                document.querySelectorAll('.page-break').forEach(pb => pb.classList.remove('drag-over'));
+            });
+
+            pageBreak.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                pageBreak.classList.add('drag-over');
+            });
+            pageBreak.addEventListener('dragleave', function(e) {
+                pageBreak.classList.remove('drag-over');
+            });
+            pageBreak.addEventListener('drop', function(e) {
+                e.preventDefault();
+                pageBreak.classList.remove('drag-over');
+                const dragged = window._draggedPageBreak;
+                if (dragged && dragged !== pageBreak) {
+                    // جابجایی: قبل یا بعد از این page-break بسته به موقعیت موس
+                    const rect = pageBreak.getBoundingClientRect();
+                    const offset = e.clientY - rect.top;
+                    if (offset < rect.height / 2) {
+                        pageBreak.parentNode.insertBefore(dragged, pageBreak);
+                    } else {
+                        pageBreak.parentNode.insertBefore(dragged, pageBreak.nextSibling);
+                    }
+                }
+            });
+        }
+
+        // فقط یکبار event روی preview بگذار
+        (function() {
+            const preview = document.getElementById('preview');
+            preview.addEventListener('dragover', function(e) {
+                e.preventDefault();
+            });
+            preview.addEventListener('drop', function(e) {
+                e.preventDefault();
+                const dragged = window._draggedPageBreak;
+                if (dragged) {
+                    // پیدا کردن نزدیک‌ترین المان زیر موس
+                    let after = null;
+                    for (let node of preview.childNodes) {
+                        if (node.nodeType === 1 && node !== dragged) {
+                            const rect = node.getBoundingClientRect();
+                            if (e.clientY < rect.top + rect.height / 2) {
+                                after = node;
+                                break;
+                            }
+                        }
+                    }
+                    if (after) {
+                        preview.insertBefore(dragged, after);
+                    } else {
+                        preview.appendChild(dragged);
+                    }
+                }
+            });
+        })();
+
+        // اضافه کردن قابلیت جابجایی به page-breakهای موجود پس از هر بار نمایش پیش‌نمایش
+        function enablePageBreakDragAndDrop() {
+            const preview = document.getElementById('preview');
+            preview.querySelectorAll('.page-break').forEach(pb => {
+                pb.setAttribute('draggable', 'false');
+                if (!pb.querySelector('.break-handle')) {
+                    pb.innerHTML = '<span class="break-handle" title="جابجایی شکست صفحه">&#9776;</span>';
+                }
+                addPageBreakDragEvents(pb);
+            });
+        }
+
+        // اطمینان از فعال بودن drag & drop پس از هر بار پیش‌نمایش
+        const origPreviewBtnClick = document.getElementById('previewBtn').onclick;
+        document.getElementById('previewBtn').addEventListener('click', function() {
+            setTimeout(enablePageBreakDragAndDrop, 100);
+            if (typeof origPreviewBtnClick === 'function') origPreviewBtnClick();
+        });
+
+        // همچنین پس از نمایش شکست صفحه
+        const origShowPageBreaksBtnClick = document.getElementById('showPageBreaksBtn').onclick;
+        document.getElementById('showPageBreaksBtn').addEventListener('click', function() {
+            setTimeout(enablePageBreakDragAndDrop, 100);
+            if (typeof origShowPageBreaksBtnClick === 'function') origShowPageBreaksBtnClick();
+        });
+
+        // تبدیل به PDF
+        document.getElementById('generatePdfBtn').addEventListener('click', function() {
+            // ابتدا شکست صفحه را نمایش می‌دهیم تا مطمئن شویم صفحات درست تقسیم شده‌اند
+            document.getElementById('showPageBreaksBtn').click();
+            
+            const preview = document.getElementById('preview');
+            const pageHeight = parseInt(document.getElementById('pageHeight').value) || 800;
+            
+            // با استفاده از html2canvas، پیش‌نمایش را به تصویر تبدیل می‌کنیم
+            generatePDF(preview, pageHeight);
+        });
+        
+        // تابع تولید PDF با پشتیبانی از چندین صفحه (تصویری)
+        function generatePDF(element, pageHeight) {
+            // محاسبه ابعاد صفحه A4 (در میلی‌متر)
+            const a4Width = 210;
+            const a4Height = 297;
+            const margin = 10;
+            
+            // تبدیل میلی‌متر به پیکسل (تقریبی، 3.779528 پیکسل = 1 میلی‌متر)
+            const pxPerMm = 3.779528;
+            const contentWidthPx = (a4Width - 2 * margin) * pxPerMm;
+            
+            // تقسیم محتوا به صفحات با استفاده از نشانگرهای شکست صفحه
+            const pageBreaks = Array.from(element.querySelectorAll('.page-break'));
+            const allElements = Array.from(element.childNodes);
+            const pages = [];
+            let currentPage = [];
+            let lastBreakIndex = -1;
+            
+            // برای هر شکست صفحه، المان‌های بین آن و شکست قبلی را به عنوان یک صفحه در نظر می‌گیریم
+            for (let i = 0; i < pageBreaks.length; i++) {
+                const breakElement = pageBreaks[i];
+                const breakIndex = allElements.indexOf(breakElement);
+                
+                if (breakIndex > lastBreakIndex + 1) {
+                    // اضافه کردن المان‌های بین دو شکست صفحه به عنوان یک صفحه
+                    const pageElements = allElements.slice(lastBreakIndex + 1, breakIndex)
+                        .filter(el => el.nodeName !== 'BR' && !el.classList?.contains('page-break'));
+                    
+                    if (pageElements.length > 0) {
+                        pages.push(pageElements);
+                    }
+                }
+                
+                lastBreakIndex = breakIndex;
+            }
+            
+            // اضافه کردن المان‌های بعد از آخرین شکست صفحه
+            const lastPageElements = allElements.slice(lastBreakIndex + 1)
+                .filter(el => el.nodeName !== 'BR' && !el.classList?.contains('page-break'));
+            
+            if (lastPageElements.length > 0) {
+                pages.push(lastPageElements);
+            }
+            
+            // اگر هیچ شکست صفحه‌ای وجود نداشت، کل محتوا را یک صفحه در نظر می‌گیریم
+            if (pages.length === 0) {
+                const pageElements = allElements.filter(el => el.nodeName !== 'BR');
+                if (pageElements.length > 0) {
+                    pages.push(pageElements);
+                }
+            }
+            
+            // ایجاد PDF
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4',
+                compress: true
+            });
+            
+            // پردازش هر صفحه
+            let pagePromises = [];
+            
+            pages.forEach((pageElements, pageIndex) => {
+                // ساخت یک المان موقت برای هر صفحه
+                const pageContainer = document.createElement('div');
+                pageContainer.style.width = contentWidthPx + 'px';
+                pageContainer.style.padding = '20px';
+                pageContainer.style.backgroundColor = 'white';
+                pageContainer.style.direction = 'rtl';
+                pageContainer.style.textAlign = 'right';
+                document.body.appendChild(pageContainer);
+                
+                // اضافه کردن المان‌های صفحه به کانتینر
+                pageElements.forEach(element => {
+                    if (element.cloneNode) {
+                        const clone = element.cloneNode(true);
+                        if (clone.classList && clone.classList.contains('page-break')) {
+                            return; // شکست صفحه‌ها را نادیده می‌گیریم
+                        }
+                        pageContainer.appendChild(clone);
+                    }
+                });
+                
+                                // تبدیل به تصویر و اضافه کردن به PDF
+                                const promise = html2canvas(pageContainer, {
+                                    scale: 4 // افزایش کیفیت به حداکثر
+                                }).then(canvas => {
+                                    // اضافه کردن صفحه جدید به PDF بعد از صفحه اول
+                                    if (pageIndex > 0) {
+                                        pdf.addPage();
+                                    }
+                                    
+                                    const imgData = canvas.toDataURL('image/png');
+                                    pdf.addImage(
+                                        imgData,
+                                        'PNG',
+                                        margin,
+                                        margin,
+                                        a4Width - 2 * margin,
+                                        (canvas.height * (a4Width - 2 * margin)) / canvas.width
+                                    );
+                                    
+                                    // پاک کردن المان موقت
+                                    document.body.removeChild(pageContainer);
+                                }).catch(error => {
+                                    console.error('Error generating PDF page:', error);
+                                    alert('خطا در تولید PDF: ' + error.message);
+                                });
+                                
+                                pagePromises.push(promise);
+                            });
+                
+                            // وقتی همه صفحات پردازش شدند، PDF را ذخیره کنید
+                            Promise.all(pagePromises).then(() => {
+                                pdf.save('document-farsi.pdf');
+                            }).catch(error => {
+                                console.error('Error saving PDF:', error);
+                                alert('خطا در ذخیره PDF: ' + error.message);
+                            });
+                        }
+                    </script>
+                </body>
+                </html>
